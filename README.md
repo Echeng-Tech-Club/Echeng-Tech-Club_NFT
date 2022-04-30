@@ -1,2 +1,2 @@
 # Echeng-Tech-Club_NFT
-NFT For Echeng
+The first NFT for Echeng
