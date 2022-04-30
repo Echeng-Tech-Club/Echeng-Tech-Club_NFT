@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.10;
+pragma solidity ^0.8.0;
 
 import "erc721a/contracts/ERC721A.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -129,6 +129,7 @@ contract CryptoNaive is ERC721A, Ownable, ReentrancyGuard {
 
     function mintCryptoNaive(uint8 tokenQuantity, bytes32[] calldata merkleProof) 
         external whenClaimActive nonReentrant {
+        require(msg.sender == tx.origin, "Please change the address");
         require(tokenQuantity > 0, "Must mint at least one CryproNaive");
         require(totalSupply() + tokenQuantity <= MAX_Totol_Supply, "Minting would exceed max supply");
         require(tokenQuantity + balanceOf(msg.sender) <= Max_Per_Address, "numCryNaive should not exceed MaxPerAddress");
