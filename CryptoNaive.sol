@@ -38,7 +38,6 @@ contract CryptoNaive is ERC721A, Ownable, ReentrancyGuard {
     mapping(uint256 => string) private _tokenURIs;
 
     bytes32 public saleMerkleRoot; //Whitelist vertify
-    mapping(address => bool) public is_claimed;
 
 
 
@@ -55,6 +54,18 @@ contract CryptoNaive is ERC721A, Ownable, ReentrancyGuard {
 
     modifier onlyOperator() {
         require(operator[msg.sender] , "Only operator can call this method");
+        _;
+    }
+
+    modifier isValidMerkleProof(bytes32[] calldata merkleProof, bytes32 root) {
+        require(
+            MerkleProof.verify(
+                merkleProof,
+                root,
+                keccak256(abi.encodePacked(msg.sender))
+            ),
+            "Address does not exist in list"
+        );
         _;
     }
 
@@ -92,9 +103,6 @@ contract CryptoNaive is ERC721A, Ownable, ReentrancyGuard {
         _isDisplayPic = !_isDisplayPic;
     }
 
-    function setBaseURI(string memory uri) external onlyOperator {
-        baseURI = uri;
-    }
 
     function setOperator(address _operator, bool _bool) external onlyOwner {
         operator[_operator] = _bool;
@@ -127,6 +135,20 @@ contract CryptoNaive is ERC721A, Ownable, ReentrancyGuard {
         return  MerkleProof.verify(merkleProof, saleMerkleRoot, keccak256(abi.encodePacked(msg.sender)));
     }
 
+    function setNotRevealedURI(string memory _notRevealedURI) public onlyOperator {
+        notRevealedUri = _notRevealedURI;
+    }
+
+    function setBaseURI(string memory _newBaseURI) public onlyOperator {
+        baseURI = _newBaseURI;
+    }
+
+    function setBaseExtension(string memory _newBaseExtension) public onlyOperator {
+        baseExtension = _newBaseExtension;
+    }
+
+    
+    //mint
     function mintCryptoNaive(uint8 tokenQuantity, bytes32[] calldata merkleProof) 
         external whenClaimActive nonReentrant {
         require(msg.sender == tx.origin, "Please change the address");
@@ -136,9 +158,7 @@ contract CryptoNaive is ERC721A, Ownable, ReentrancyGuard {
         require(tokenQuantity <= Max_Per_Tx, "numLands should not exceed maxMintPerTx");
         //is_whitelist
         if(_isWhitelist(merkleProof)){
-            require(!is_claimed[msg.sender], "Address already claimed");
-            is_claimed[msg.sender] = true;
-            _mintCryptoNaive(tokenQuantity, msg.sender);
+          _safeMint(msg.sender, tokenQuantity);
         }else{
             uint256 mintPrice = getMintPrice();
             IERC20(tokenContract).safeTransferFrom(msg.sender, address(this), mintPrice * tokenQuantity);
@@ -148,6 +168,45 @@ contract CryptoNaive is ERC721A, Ownable, ReentrancyGuard {
 
     function _mintCryptoNaive(uint256 tokenQuantity, address recipient) internal {
         _safeMint(recipient, tokenQuantity);
+    }
+
+    //display
+    function tokenURI(uint256 tokenId) public view virtual override returns (string memory){
+        require(
+            _exists(tokenId),
+            "ERC721Metadata: URI query for nonexistent token"
+        );
+
+        if (_isDisplayPic == false) {
+            return notRevealedUri;
+        }
+
+        string memory _tokenURI = _tokenURIs[tokenId];
+        string memory base = _baseURI();
+
+        // If there is no base URI, return the token URI.
+        if (bytes(base).length == 0) {
+            return _tokenURI;
+        }
+        // If both are set, concatenate the baseURI and tokenURI (via abi.encodePacked).
+        if (bytes(_tokenURI).length > 0) {
+            return string(abi.encodePacked(base, _tokenURI));
+        }
+        // If there is a baseURI but no tokenURI, concatenate the tokenID to the baseURI.
+        return
+            string(abi.encodePacked(base, tokenId.toString(), baseExtension));
+    }
+
+    function withdraw(address to) public onlyOwner {
+        uint256 balance = address(this).balance;
+        if(balance > 0){
+            Address.sendValue(payable(owner()), balance);
+        }
+
+        balance = IERC20(tokenContract).balanceOf(address(this));
+        if(balance > 0){
+            IERC20(tokenContract).safeTransfer(owner(), balance);
+        }
     }
 
 }
