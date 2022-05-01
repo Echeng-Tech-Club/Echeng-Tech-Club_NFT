@@ -18,11 +18,12 @@ contract CryptoNaive is ERC721A, Ownable, ReentrancyGuard {
 
     //constants
     uint256 immutable public MAX_Totol_Supply; 
-    address immutable public tokenContract;
+    
     
 
 
     // attributes
+    address public tokenContract;
     uint256 public publicSaleStartTime;
     uint256 public Max_Per_Address; 
     uint256 public Max_Per_Tx;
@@ -145,6 +146,10 @@ contract CryptoNaive is ERC721A, Ownable, ReentrancyGuard {
 
     function setBaseExtension(string memory _newBaseExtension) public onlyOperator {
         baseExtension = _newBaseExtension;
+    }
+
+    function setTokenToUse(address _tokenContract) external onlyOperator {
+        tokenContract = _tokenContract;
     }
 
     
