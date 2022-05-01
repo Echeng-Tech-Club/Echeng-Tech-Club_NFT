@@ -10,18 +10,13 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 
-
 contract CryptoNaive is ERC721A, Ownable, ReentrancyGuard {
-
     using SafeERC20 for IERC20;
     using Strings for uint256;  
 
     //constants
     uint256 immutable public MAX_Totol_Supply; 
     
-    
-
-
     // attributes
     address public tokenContract;
     uint256 public publicSaleStartTime;
@@ -37,10 +32,7 @@ contract CryptoNaive is ERC721A, Ownable, ReentrancyGuard {
     string  baseURI;
     mapping(address => bool)   public operator;
     mapping(uint256 => string) private _tokenURIs;
-
     bytes32 public saleMerkleRoot; //Whitelist vertify
-
-
 
     //modifiers
     modifier whenClaimActive() {
@@ -58,20 +50,8 @@ contract CryptoNaive is ERC721A, Ownable, ReentrancyGuard {
         _;
     }
 
-    modifier isValidMerkleProof(bytes32[] calldata merkleProof, bytes32 root) {
-        require(
-            MerkleProof.verify(
-                merkleProof,
-                root,
-                keccak256(abi.encodePacked(msg.sender))
-            ),
-            "Address does not exist in list"
-        );
-        _;
-    }
-
     //events
-
+    
     constructor(
         string memory name, string memory symbol,
         address  _tokenContract,
@@ -151,8 +131,7 @@ contract CryptoNaive is ERC721A, Ownable, ReentrancyGuard {
     function setTokenToUse(address _tokenContract) external onlyOperator {
         tokenContract = _tokenContract;
     }
-
-    
+ 
     //mint
     function mintCryptoNaive(uint8 tokenQuantity, bytes32[] calldata merkleProof) 
         external whenClaimActive nonReentrant {
@@ -201,7 +180,8 @@ contract CryptoNaive is ERC721A, Ownable, ReentrancyGuard {
         return
             string(abi.encodePacked(base, tokenId.toString(), baseExtension));
     }
-
+    
+    //withdraw
     function withdraw(address to) public onlyOwner {
         uint256 balance = address(this).balance;
         if(balance > 0){
@@ -213,5 +193,4 @@ contract CryptoNaive is ERC721A, Ownable, ReentrancyGuard {
             IERC20(tokenContract).safeTransfer(owner(), balance);
         }
     }
-
 }
